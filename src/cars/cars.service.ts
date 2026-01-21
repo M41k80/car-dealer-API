@@ -1,25 +1,29 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Car } from './interfaces/car.interface';
+import { v4 as uuid } from 'uuid';
+import { CreateCarDto, UpdateCarDto } from './dto';
+
 
 @Injectable()
 export class CarsService {
-  private cars = [
+  private cars: Car[] = [
     {
-      id: 1,
+      id: uuid(),
       name: 'Toyota',
       model: 'Prius',
     },
     {
-      id: 2,
+      id: uuid(),
       name: 'Honda',
       model: 'Civic',
     },
     {
-      id: 3,
+      id: uuid(),
       name: 'Ford',
       model: 'Mustang',
     },
     {
-      id: 4,
+      id: uuid(),
       name: 'Chevrolet',
       model: 'Camaro',
     },
@@ -30,7 +34,7 @@ export class CarsService {
     return this.cars;
   }
 
-  findOneById(id: number) {
+  findOneById(id: string) {
   const car = this.cars.find((car) => car.id === id);
   if (!car) {
     throw new NotFoundException('Car not found by id: ' + id);
@@ -39,11 +43,10 @@ export class CarsService {
 }
 
 
-createCar(id: number, name: string, model: string) {
+createCar(createCarDto: CreateCarDto): Car {
   const car = {
-    id,
-    name,
-    model,
+    id: uuid(),
+    ...createCarDto,
   };
   this.cars.push(car);
   return car;
@@ -51,20 +54,31 @@ createCar(id: number, name: string, model: string) {
 
 }
 
-updateCar(id: number, name: string, model: string) {
-  const car = this.cars.find((car) => car.id === id);
-  if (!car) {
-    throw new NotFoundException('Car not found by id: ' + id);
-  }
-  car.name = name;
-  car.model = model;
-  return car;
+updateCar(id: string, updateCarDto: UpdateCarDto): Car {
+  
+  let carDB = this.findOneById(id);
+
+  if( updateCarDto.id && updateCarDto.id !== id) 
+    throw new BadRequestException('Car id is not valid inside body');
+
+  this.cars = this.cars.map((car) => {
+    if (car.id === id) {
+      carDB = {
+        ...carDB,
+        ...updateCarDto,
+        id,
+      };
+      return carDB;
+    }
+    return car;
+  });
+  return carDB;
 
 }
 
 
-deleteCar(id: number) {
-  const car = this.cars.find((car) => car.id === id);
+deleteCar(id: string) {
+  const car = this.findOneById(id);
   if (!car) {
     throw new NotFoundException('Car not found by id: ' + id);
   }
